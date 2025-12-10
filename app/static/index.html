@@ -13,14 +13,14 @@
             <div class="card-body">
                 <form id="taskForm">
                     <div class="mb-3">
-                        <input type="text" id="title" class="form-control" placeholder="Название задачи (мин. 3 символа)" required minlength="3">
+                        <input type="text" id="title" name="title" class="form-control" placeholder="Название задачи (мин. 3 символа)" required minlength="3">
                     </div>
                     <div class="mb-3">
-                        <textarea id="details" class="form-control" rows="2" placeholder="Описание (опционально)"></textarea>
+                        <textarea id="details" name="details" class="form-control" rows="2" placeholder="Описание (опционально)"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Приоритет</label>
-                        <select id="priority" class="form-select">
+                        <select id="priority" name="priority" class="form-select">
                             <option value="1">Низкий</option>
                             <option value="2" selected>Средний</option>
                             <option value="3">Высокий</option>
@@ -28,7 +28,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Срок выполнения</label>
-                        <input type="datetime-local" id="due_date" class="form-control">
+                        <input type="datetime-local" id="due_date" name="due_date" class="form-control">
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Добавить задачу</button>
                 </form>
@@ -121,9 +121,20 @@
                     loadTasks();
                     taskForm.reset();
                     document.getElementById('due_date').value = '';
+                } else {
+                    const err = await res.json();
+                    let msg = 'Ошибка:\n';
+                    if (typeof err.detail === 'string') {
+                        msg += err.detail;
+                    } else if (Array.isArray(err.detail)) {
+                        msg += err.detail.map(e => `${e.loc?.join('.') || 'field'}: ${e.msg}`).join('\n');
+                    } else {
+                        msg += JSON.stringify(err);
+                    }
+                    alert(msg);
                 }
             } catch (e) {
-                alert('Не удалось создать задачу');
+                alert('Ошибка сети: ' + e.message);
             }
         }
 
@@ -153,14 +164,37 @@
         taskForm.addEventListener('submit', e => {
             e.preventDefault();
             const formData = new FormData(taskForm);
-            const dueDateInput = document.getElementById('due_date').value;
-            const dueDate = dueDateInput ? new Date(dueDateInput).toISOString() : null;
+            const title = formData.get('title');
+            const details = formData.get('details');
+            const priority = parseInt(formData.get('priority'));
+            const dueDateInput = formData.get('due_date');
+
+            if (!title || !title.trim()) {
+                alert('Название задачи не может быть пустым.');
+                return;
+            }
+            if (title.trim().length < 3) {
+                alert('Название должно содержать минимум 3 непробельных символа.');
+                return;
+            }
+            if (isNaN(priority) || priority < 1 || priority > 3) {
+                alert('Приоритет должен быть от 1 до 3.');
+                return;
+            }
+
+            let due_date = null;
+            if (dueDateInput) {
+                const dt = new Date(dueDateInput);
+                if (!isNaN(dt.getTime())) {
+                    due_date = dt.toISOString();
+                }
+            }
 
             createTask({
-                title: formData.get('title'),
-                details: formData.get('details') || null,
-                priority: parseInt(formData.get('priority')),
-                due_date: dueDate,
+                title: title.trim(),
+                details: details && details.trim() ? details.trim() : null,
+                priority: priority,
+                due_date: due_date,
                 is_done: false
             });
         });

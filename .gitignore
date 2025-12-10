@@ -1,0 +1,34 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Database
+lab.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# FastAPI / Uvicorn
+uvicorn.log
+logs/
+
+# Optional: if you use pytest or other tools
+htmlcov/
+.tox/
+.cache/
+nosetests.xml
+coverage.xml

@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, select, asc, desc, func
 from sqlalchemy.orm import declarative_base, mapped_column, Mapped, Session
 from sqlalchemy.types import Integer, String, Float, Boolean
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import os
@@ -39,7 +39,7 @@ class Task(Base):
 
 
 Base.metadata.create_all(engine)
-app = FastAPI(title="ToDo")
+application = FastAPI(title="ToDo")
 
 class TaskBase(BaseModel):
     title: str = Field(..., min_length=3, description="Заголовок задачи (минимум 3 символа)")
@@ -92,15 +92,14 @@ class TaskResponse(TaskBase):
     created_at: str
     updated_at: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-@app.get("/health", tags=["system"])
+@application.get("/health", tags=["system"])
 def health():
     return {"status": "ok"}
 
 
-@app.get("/tasks", response_model=List[TaskResponse], tags=["tasks"])
+@application.get("/tasks", response_model=List[TaskResponse], tags=["tasks"])
 def list_items(
     q: Optional[str] = Query(None, description="Поиск по подстроке в title и details (без учёта регистра)"),
     is_done: Optional[bool] = Query(None, description="Фильтр по статусу выполнения"),
@@ -152,7 +151,7 @@ def list_items(
         return tasks
 
 
-@app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
+@application.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def get_task(task_id: int = Path(ge=1)):
     with Session(engine) as session:
         task = session.get(Task, task_id)
@@ -161,7 +160,7 @@ def get_task(task_id: int = Path(ge=1)):
         return task
 
 
-@app.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED, tags=["tasks"])
+@application.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED, tags=["tasks"])
 def create_task(task: TaskCreate):
     now = datetime.now(timezone.utc).isoformat()
     obj = Task(
@@ -181,14 +180,14 @@ def create_task(task: TaskCreate):
         return obj
 
 
-@app.put("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
+@application.put("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def update_task(task_id: int = Path(ge=1), task: TaskUpdate = ...):
     with Session(engine) as session:
         obj = session.get(Task, task_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        update_data = task.dict(exclude_unset=True)
+        update_data = task.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(obj, key, value)
 
@@ -198,7 +197,7 @@ def update_task(task_id: int = Path(ge=1), task: TaskUpdate = ...):
         return obj
 
 
-@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["tasks"])
+@application.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["tasks"])
 def delete_task(task_id: int = Path(ge=1)):
     with Session(engine) as session:
         obj = session.get(Task, task_id)
@@ -214,10 +213,10 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(current_dir, "static")
 
 # Подключаем статику
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+application.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Главная страница — отдаём index.html
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+@application.get("/", response_class=HTMLResponse, include_in_schema=False)
 def read_root():
     with open(os.path.join(static_dir, "index.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())

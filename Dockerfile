@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Рабочая директория
 WORKDIR /app
 
-# Создаём непривилегированного пользователя (лучшая практика)
+# Создаём непривилегированного пользователя
 RUN addgroup --system --gid 1000 appuser && \
     adduser --system --uid 1000 --gid 1000 --disabled-password --gecos "" appuser
 

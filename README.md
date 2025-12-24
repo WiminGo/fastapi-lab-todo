@@ -13,7 +13,7 @@ docker build -t fastapi-todo .
 3. Запуск контейнера (с сохранением данных)
 
 ```bash
-docker run -rm -p 8000:8000 -v "${PWD}/lab.db:/app/lab.db" fastapi-todo
+docker run --rm -p 8000:8000 -v "${PWD}/lab.db:/app/lab.db" fastapi-todo
 ```
 
 ## Запуск тестов

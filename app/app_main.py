@@ -25,19 +25,6 @@ class Task(Base):
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "title": self.title,
-            "details": self.details,
-            "is_done": self.is_done,
-            "priority": self.priority,
-            "due_date": self.due_date,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at
-        }
-
-
 Base.metadata.create_all(engine)
 application = FastAPI(title="ToDo")
 
